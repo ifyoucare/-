@@ -1,0 +1,77 @@
+shell 泛指解释器
+bash具体解释器产品，不是唯一的解释器
+
+[root@svr5 ~]# !1028   重新执行历史命令列表中的第1028条操作
+
+[root@svr5 ~]# grep HISTSIZE /etc/profile   修改历史命令条数
+HISTSIZE=1000
+
+[root@svr5 ~]# history -c                      //清空自己的历史命令
+[root@svr5 ~]# > ~/.bash_history                  //清空记录文件
+
+标准输入（stdin），描述号为0；
+标准输出（stdout），描述号为1；
+标准错误（stderr），描述号为2。
+若希望将正常输出、错误输出重定向同一个文件，可使用 &>
+[root@svr5 ~]# ls -l nb.txt /etc/fstab 2> stderr.txt 
+-rw-r--r--. 1 root root 541 1月   5 2017 /etc/fstab
+//正确的信息默认输出至屏幕，错误信息重定向到目标文件 
+[root@svr5 ~]# cat stderr.txt               //从文件中查看出错信息
+ls: nb.txt: 没有那个文件或目录
+重定向标准输入。
+[root@svr5 ~]# mail -s Error  root   < /etc/passwd
+
+[root@svr5 ~]# bash   first.sh                         //开启子进程
+[root@svr5 ~]# sh        first.sh                        //开启子进程
+[root@svr5 ~]# source first.sh                        //不开启子进程
+执行脚本且不开子进程
+pstree上直观，相当于在终端上直接输出脚本所有的指令
+
+shell定义变量两边不能有空格
+定义变量可以是字母数字下划线，不能数字开头,不能是特殊符号
+
+[root@svr5 ~]# unset test                 //可以用来撤销变量test
+
+全局文件为/etc/profile
+
+PS1 一级提示符
+PS2 二级提示符
+环境变量：$USER $HOME $SHELL $UID $PATH $PWD等
+使用env可查看所有环境变量
+使用set可查看所有变量（包括env能看到的和自行定义的变量）
+
+echo $0                                        //脚本的名称
+echo $1                                        //第一个参数
+echo $2                                        //第二个参数
+echo $*                                        //所有参数
+echo $#                                        //所有的综合（数量）
+echo $$                                        //当前进程的进程号
+echo $?                                        //上一个程序的返回状态码
+
+使用双引号可以界定一个完整字符串
+单引号界定一个完整的字符串，并且可以实现屏蔽特殊符号的功能
+用反撇号或$()时，可以将命令执行的标准输出作为字符串存储，因此称为命令替换
+
+stty -echo 取消终端回显
+stty echo  开启终端回显
+
+使用export发布全局变量
+默认情况下，自定义的变量为局部变量，只在当前Shell环境中有效，而在子Shell环境中无法直接使用。比如已定义的SCHOOL变量，当进入到sh或bash子Shell后，变量SCHOOL将处于未定义的状态
+
+[root@svr5 ~]# yy="Tarena IT Group"
+[root@svr5 ~]# echo $yy
+Tarena IT Group
+[root@svr5 ~]# bash                              //开启bash子进程
+[root@svr5 ~]# echo $yy                          //查看SCHOOL变量值无结果
+
+若希望定义的变量能被子进程使用，可以使用export命令将其发布为全局变量。使用export发布时，只需指定变量名（可以有多个）即可，也可以通过export命令直接设置新的全局变量
+[root@svr5 ~]# export yy                              //发布已定义的变量
+[root@svr5 ~]# export XX="1234"                      //发布新变量
+
+ftp://172.40.50.118/course/shell/day01......
+
+
+
+
+
+

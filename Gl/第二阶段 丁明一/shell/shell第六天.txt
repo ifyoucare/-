@@ -1,0 +1,81 @@
+sed文本处理工具的用法：
+用法1：前置命令 | sed  [选项]  '条件指令'
+用法2：sed  [选项]  '条件指令'  文件.. ..
+
+sed命令的常用选项如下：
+-n（屏蔽默认输出，默认sed会输出读取文档的全部内容）
+-r（让sed支持扩展正则）
+-i（sed直接修改源文件，默认sed只是通过内存临时修改文件，源文件无影响）
+谨慎使用
+'p'  打印
+'d'  删除
+'s'  修改
+
+打印passwd第3到第6行账户的信息：
+[root@svr5 ~]# sed  -n '3,6p' /etc/passwd          
+用分号来隔离多个操作，比如：
+[root@svr5 ~]# sed -n '1p;4p' /etc/passwd
+打印第3以及后面的10行：
+[root@svr5 ~]# sed -n '3,+10p' /etc/passwd
+打印奇数行（从1开始每到两行输出一行）：
+[root@svr5 ~]# sed -n '1~2p' /etc/passwd
+
+打印包含root的行：
+[root@svr5 ~]# sed -n '/root/p' /etc/passwd
+打印bash结尾的行：
+[root@svr5 ~]# sed -n '/bash$/p' /etc/passwd
+
+[root@svr5 ~]# sed  -n '$=' a.txt          //输出文件的行数
+
+[root@svr5 ~]# sed  '/xml/!d' a.txt       //删除不包含xml的行，!符号表示取反
+*****************************************************************
+# sed 's/2017/xxxx/g'          test.txt    替换全部
+# sed '2s/2017/xxxx/2'        test.txt    替换第2行第二个2017
+# sed 's/2017//g'          	    test.txt           删除2017字符
+# sed -n 's/2017/xxxx/p'      test.txt      显示替换的行
+*****************************************************************
+替换操作的分隔“/”可改用任意其他字符，如#、&等键盘输出任意字符数字，如与分隔符相同需用”\“转义，便于修改文件路径
+# sed -n 's&/bin/bash&/sbin/sh&p' /etc/passwd
+
+# sed -r 's/(^.)(.*)(.$)/\3\2\1/' test.txt
+# sed -r 's/^( ){2}//' test1.txt.
+
+sed工具的多行文本处理操作：
+i： 在指定的行之前插入文本
+a：在指定的行之后追加文本
+c：替换指定的行
+# sed '/beijing/a xxx' a.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

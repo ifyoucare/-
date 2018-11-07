@@ -1,0 +1,120 @@
+字串截取的三种用法：
+${变量名:起始位置:长度}
+只有它默认从0开始计数，也就是第一位为0，空白则为从头开始
+
+
+expr substr "$变量名" 起始位置 长度
+
+echo $变量名 | cut -b 起始位置-结束位置
+[root@svr7 ~]# echo $phone |cut -b 1,5,6
+                                                            1-5
+
+$b=$b$a  for 循环的时候出一个结果放一次后面结果依次追加
+
+字串替换的两种用法：
+只替换第一个匹配结果：${变量名/old/new}
+替换全部匹配结果：${变量名//old/new}
+[root@svr7 ~]# echo ${phone/0039/xxxx}
+186xxxx0427
+[root@svr7 ~]# echo ${phone/0427/}
+1860039
+[root@svr7 ~]# echo $phone
+18600390427
+
+字符串掐头去尾(删除)：
+[root@svr7 ~]# A=`head -1 /etc/passwd`
+从左向右，最短匹配删除：${变量名#*关键词}   匹配第一个关键词
+[root@svr7 ~]# echo ${A#*:}
+x:0:0:root:/root:/bin/bash
+从左向右，最长匹配删除：${变量名##*关键词}  匹配最后一个关键词
+[root@svr7 ~]# echo ${A##*:}
+/bin/bash
+从右向左，最短匹配删除：${变量名%关键词*}
+[root@svr7 ~]# echo ${A%:*}
+root:x:0:0:root:/root
+从右向左，最长匹配删除：${变量名%%关键词*}
+[root@svr7 ~]# echo ${A%%:*}
+root
+
+
+echo 不会去改变变量值，重新赋值才会改变变量
+
+通过${var:-word}判断变量是否存在，决定变量的初始值。
+num=${num:-100}   num变量不输值会默认取100
+
+储备知识（发送邮件的几种方式）：
+[root@svr5 ~]# echo "test mail" | mail -s test root
+[root@svr5 ~]# mail -s test root < /etc/passwd       缺点：有依赖关系
+[root@svr5 ~]# mail -s test root << EOF      end of file 尽量就用这个写
+test mail
+hello world
+EOF
+
+[root@svr5 ~]# vim  expect_ssh.sh 
+#!/bin/bash
+expect << EOF
+spawn ssh 192.168.4.5                          #//创建交互式进程
+expect "password:" { send "123456\r" }           #//自动发送密码\r可换成\n
+expect "#"          { send "touch /tmp.txt\r" }     #//发送命令
+expect "#"          { send "exit\r" }                        此行默认不执行！！！！
+EOF
+注意事项：
+expect脚本的最后一行默认不执行         ！！！！！！！
+
+如果不希望ssh时出现yes/no的提示，远程时使用如下选项:
+# ssh -o StrictHostKeyChecking=no server0
+# ssh -o StrictHostKeyChecking=no 192.168.4.12
+
+[root@svr7 ~]# rm -rf .ssh/known_hosts   连接一次后会保存ssh之间的密钥，
+删除之后第一次连接又会提示连接
+
+正则表达式：匹配过滤数据  通用语言
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

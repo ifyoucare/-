@@ -1,0 +1,346 @@
+ 案例1：部署LNMP环境
+	问题
+LNMP ： Linux  Nginx MySQL  php或python
+LAMP：             Apache
+ 
+静态网站，动态网站（需要有解释器解释其脚本并执行）
+
+在RHEL7系统中，源码安装Nginx，使用RPM包安装MariaDB、PHP、PHP-FPM软件。
+操作过程中需要安装的软件列表如下：
+	nginx
+	mariadb、mariadb-server、mariadb-devel
+	php、php-fpm、php-mysql
+备注：mariadb（数据库客户端软件）、mariadb-server（数据库服务器软件）、mariadb-devel（其他客户端软件的依赖包）、php（解释器）、php-fpm（进程管理器服务，9000）、php-mysql（PHP的数据库扩展包）
+	步骤
+步骤一：安装软件
+
+1）使用yum安装基础依赖包
+[root@proxy ~]# yum -y install gcc openssl-devel pcre-devel zlib-devel
+2）源码安装Nginx（如果前面课程中已经安装Nginx，则忽略这一步）
+
+3）安装MariaDB
+Mariadb在新版RHEL7光盘中包含有该软件，配置yum源后可以直接使用yum安装：
+[root@proxy ~]# yum -y install   mariadb   mariadb-server   mariadb-devel
+
+4）php和php-fpm(该软件包在lnmp_soft中提供)
+[root@proxy ~]# yum -y  install  php   php-mysql
+[root@proxy ~]# yum -y  install 
+  php-fpm-5.4.16-42.el7.x86_64.rpm		光盘中没有
+
+步骤二：启动服务
+1）启动Nginx服务（如果已经启动nginx，则可以忽略这一步）
+这里需要注意的是，如果服务器上已经启动了其他监听80端口的服务软件（如httpd），则需要先关闭该服务，否则会出现冲突。
+
+2）启动MySQL服务
+
+3）启动PHP-FPM服务
+[root@proxy ~]# systemctl start php-fpm           //启动服务
+
+4）设置防火墙与SELinux
+
+案例2：构建LNMP平台
+
+通过调整Nginx服务端配置，实现以下目标：
+·  配置Fast-CGI支持PHP网页
+·  创建PHP测试页面，测试使用PHP连接数据库的效果
+Nginx结合FastCGI技术即可支持PHP页面架构
+FastCGI的内存消耗问题，一个PHP-FPM解释器将消耗约25M的内存（多进程）
+
+步骤一： php-fpm配置文件
+
+1）查看php-fpm配置文件（实验中不需要修改该文件）
+[root@proxy etc]# vim /etc/php-fpm.d/www.conf
+[www]
+listen = 127.0.0.1:9000            //PHP端口号
+pm.max_children = 32                //最大进程数量
+pm.start_servers = 15                //最小进程数量
+pm.min_spare_servers = 5            //最少需要几个空闲着的进程
+pm.max_spare_servers = 32     //最多允许几个进程处于空闲状态
+
+步骤二：修改Nginx配置文件并启动服务（location静动分离）
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+location / {			location支持正则，都不匹配则匹配/
+            root   html;
+            index  index.php  index.html   index.htm;
+#设置默认首页为index.php，当用户在浏览器地址栏中只写域名或IP，不说访问什么页面时，服务器会把默认首页index.php返回给用户
+        }	
+ location  ~  \.php$  {		 		模糊匹配.php结尾
+            root           html;
+            fastcgi_pass   127.0.0.1:9000;    
+        #将请求转发给本机9000端口，PHP解释器
+            fastcgi_index  index.php;
+            #fastcgi_param   SCRIPT_FILENAME  $document_root$fastcgi_script_name;                      这段话有错误注释掉或删除
+            include        fstcgi.conf;           对应上一条做出更改
+同httpd，主配置文件读完，加载调用其他配置文件，与主配置文件相同效果
+        }
+[root@proxy ~]# /usr/local/nginx/sbin/nginx -s reload
+
+步骤三：创建PHP页面，测试LNMP架构能否解析PHP页面
+
+1）创建PHP测试页面1，可以参考lnmp_soft/php_scripts/test.php：
+[root@proxy ~]# vim /usr/local/nginx/html/test1.php
+<?php
+$i="This is a test Page";
+echo $i;
+?>
+
+2）创建PHP测试页面,连接并查询MariaDB数据库。
+可以参考lnmp_soft/php_scripts/mysql.php:
+[root@proxy ~]# vim /usr/local/nginx/html/test2.php
+<?php
+$mysqli = new mysqli('localhost','root','密码','mysql');
+//注意：root为mysql账户名称，密码需要修改为实际mysql密码，无密码则留空即可
+if (mysqli_connect_errno()){
+    die('Unable to connect!'). mysqli_connect_error();
+}
+$sql = "select * from user";
+$result = $mysqli->query($sql);
+while($row = $result->fetch_array()){
+    printf("Host:%s",$row[0]);
+    printf("</br>");
+    printf("Name:%s",$row[1]);
+    printf("</br>");
+}
+?>
+
+3）客户端使用浏览器访问服务器PHP首页文档，检验是否成功：
+[root@client ~]# firefox http://192.168.4.5/test1.php
+[root@client ~]# firefox http://192.168.4.5/test2.php
+
+4）LNMP常见问题
+Nginx的默认访问日志文件为/usr/local/nginx/logs/access.log
+Nginx的默认错误日志文件为/usr/local/nginx/logs/error.log
+PHP默认错误日志文件为/var/log/php-fpm/www-error.log
+如果动态网站访问失败，可用参考错误日志，查找错误信息
+
+案例3：地址重写
+
+
+	问题：
+通过调整Nginx服务端配置，实现以下目标：
+·  所有访问a.html的请求，重定向到b.html;
+·  所有访问192.168.4.5的请求重定向至www.tmooc.cn；
+·  所有访问192.168.4.5/下面子页面，重定向至www.tmooc.cn/下
+   相同的页面；
+·  实现firefox与curl访问相同页面文件，返回不同的内容。
+
+Nginx服务器的地址重写，主要用到的配置参数是rewrite：
+·  rewrite regex replacement flag		
+·  rewrite 旧地址 新地址 [选项]			旧地址支持正则
+
+	步骤：
+步骤一：修改配置文件(访问a.html重定向到b.html) 
+1）修改Nginx服务配置：
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+location / {
+    root   html;
+index  index.html index.htm;
+rewrite /a.html  /b.html;         a.html的.表示正则任意单个字符
+}
+}
+[root@proxy ~]# echo "BB" > /usr/local/nginx/html/b.html
+
+2）重新加载配置文件
+
+步骤二：访问a.html重定向到b.html（跳转地址栏）
+
+1）修改Nginx服务配置：
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+location / {
+    root   html;
+index  index.html index.htm;
+rewrite /a.html  /b.html  redirect;            地址栏变成b.html
+}
+}
+2）重新加载配置文件
+
+步骤三：修改配置文件(访问192.168.4.5的请求重定向至www.tmooc.cn)
+
+1) 修改Nginx服务配置
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+rewrite ^/ http://www.tmooc.cn/； 域名后以/开头包含/都跳转
+location / {
+    root   html;
+index  index.html index.htm;
+# rewrite /a.html  /b.html  redirect;
+}
+}
+2）重新加载配置文件
+3）真机验证
+
+步骤四：修改配置文件(访问192.168.4.5/下面子页面，重定向至www.tmooc.cn/下相同的页面)
+
+1) 修改Nginx服务配置
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+rewrite ^/(.*) http://www.tmooc.cn/$1;  前面保留后面粘贴用$1
+location / {
+    root   html;
+index  index.html index.htm;
+# rewrite /a.html  /b.html  redirect;
+}
+}
+2）重新加载配置文件
+
+[root@room9pc01 ~]# firefox  http://192.168.4.5/free
+
+步骤五：修改配置文件(实现curl和火狐访问相同链接返回的页面不同)          这里是其中一种方法：可以有手机窄屏，平板宽屏
+
+/etc/rc.local		开机启动程序的脚本 编辑完需要加x权限
+源文件脚本里有     比如加入nginx等自启
+
+log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                  '$status $body_bytes_sent "$http_referer" 
+                  '"$http_user_agent" "$http_x_forwarded_for"'
+192.168.4.254 - - [01/Nov/2018:09:55:47 +0800] "GET /vgfjui HTTP/1.1" 302 161 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0"
+
+ip  -  什么身份	  时间	 访问页面	  
+正常访问200错误404    "-"从其他网站调转    
+http服务代理（火狐等浏览器）
+
+1) 创建网页目录以及对应的页面文件：
+[root@proxy ~]# echo "I am Normal page" > /usr/local/nginx/html/test.html
+[root@proxy ~]# mkdir  -p  /usr/local/nginx/html/firefox/
+[root@proxy ~]# echo "firefox page" > /usr/local/nginx/html/firefox/test.html
+2) 修改Nginx服务配置
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+location / {
+    root   html;
+index  index.html index.htm;
+}
+#这里，~符号代表正则匹配，*符号代表不区分大小写
+if ($http_user_agent ~* firefox) {         //识别客户端firefox浏览器
+rewrite ^(.*)$ /firefox/$1;
+}
+}
+
+3）重新加载配置文件
+4）客户端测试
+[root@client ~]# firefox  http://192.168.4.5/test.html
+[root@client ~]# curl     http://192.168.4.5/test.html
+
+5）地址重写格式【总结】
+rewrite 旧地址 新地址 [选项]	不是必须添加选项
+last 不再读其他rewrite
+break 不再读其他语句，结束请求
+redirect 临时重定向
+permament 永久重定向
+
+[美工，前端（html，div+css），后端（java，c等），测试，运维]
+画草图---网站外表---数据---内测
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
